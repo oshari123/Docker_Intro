@@ -17,18 +17,14 @@ pipeline {
                         [name: 'tomcat-image', dockerfile: 'Dockerfile.tomcat']
                     ]
 
-                    withCredentials([usernamePassword(credentialsId: "${JFROG_CREDENTIALS_ID}", passwordVariable: 'JFROG_PASS', usernameVariable: 'JFROG_USER')]) {
-
-                        images.each { img ->
-                            def imageTag = "${JFROG_DOCKER_REGISTRY}/${IMAGE_PREFIX}/${img.name}:latest"
-
-                            echo "🔧 Building ${img.name} using ${img.dockerfile}"
-                            def image = docker.build(imageTag, "-f ${img.dockerfile} .")
-
-                            echo "🚀 Pushing image: ${imageTag}"
-                            sh "docker login ${JFROG_DOCKER_REGISTRY} -u ${JFROG_USER} -p ${JFROG_PASS}"
-                            image.push()
-                            sh "docker logout ${JFROG_DOCKER_REGISTRY}"
+                    docker.withRegistry("https://${REGISTRY}", CREDENTIALS_ID) {
+                        for (img in images) {
+                            def imageName = "${REGISTRY}/${IMAGE_NAMESPACE}/${img.name}:latest"
+                            echo " Building: ${imageName}"
+                            def builtImage = docker.build(imageName, "-f ${img.dockerfile} .")
+                            echo " Pushing: ${imageName}"
+                            builtImage.push()
+                            
                         }
                     }
                 }
