@@ -2,19 +2,20 @@ pipeline {
     agent any
 
     environment {
-        JFROG_DOCKER_REGISTRY = 'trialfwrmrd.jfrog.io' // Example: artifactory.mycompany.com/artifactory/docker-local
-        JFROG_CREDENTIALS_ID = 'jfrog-creds'
-        IMAGE_PREFIX = 'docker-assignment' // change this to your project or team name
+        REGISTRY = "trialfwrmrd.jfrog.io"                 // JFrog domain
+        IMAGE_NAMESPACE = "docker-assignment"             // Logical repo name
+        CREDENTIALS_ID = 'jfrog-creds'                    // Your Jenkins credentials ID
     }
 
     stages {
-        stage('Clone, Build and Push Images') {
+        stage('Clone, Build & Push Docker Images') {
             steps {
+
                 script {
                     def images = [
-                        [name: 'maven-image', dockerfile: 'Dockerfile.maven'],
-                        [name: 'git-image', dockerfile: 'Dockerfile.git'],
-                        [name: 'tomcat-image', dockerfile: 'Dockerfile.tomcat']
+                        [name: 'maven', dockerfile: 'Dockerfile.maven'],
+                        [name: 'git', dockerfile: 'Dockerfile.git'],
+                        [name: 'tomcat', dockerfile: 'Dockerfile.tomcat']
                     ]
 
                     docker.withRegistry("https://${REGISTRY}", CREDENTIALS_ID) {
@@ -24,7 +25,6 @@ pipeline {
                             def builtImage = docker.build(imageName, "-f ${img.dockerfile} .")
                             echo " Pushing: ${imageName}"
                             builtImage.push()
-                            
                         }
                     }
                 }
@@ -34,10 +34,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ All images built and pushed successfully!"
+            echo " All images pushed to JFrog Artifactory successfully."
         }
         failure {
-            echo "❌ Something went wrong during build or push."
+            echo " One or more builds failed. Please check the logs."
         }
     }
 }
